@@ -12,17 +12,20 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (userError) {
-    return new NextResponse(userError.message, { status: 401 });
+    return NextResponse.json({ error: userError.message }, { status: 401 });
   }
   if (!user) {
-    return new NextResponse("Not logged in.", { status: 401 });
+    return NextResponse.json({ error: "Not logged in." }, { status: 401 });
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
   if (!url || !serviceKey) {
-    return new NextResponse(
-      "Server is missing SUPABASE_SERVICE_ROLE_KEY env var. Add it to .env.local / Vercel env vars.",
+    return NextResponse.json(
+      {
+        error:
+          "Server is missing SUPABASE_SERVICE_ROLE_KEY. Add it in Vercel → Settings → Environment Variables, then redeploy.",
+      },
       { status: 500 },
     );
   }
@@ -53,11 +56,12 @@ export async function POST(request: Request) {
   // Delete the auth user. This cascades to tables referencing auth.users (ojt_profiles/user_profiles).
   const { error: deleteError } = await admin.auth.admin.deleteUser(user.id);
   if (deleteError) {
-    return new NextResponse(deleteError.message, { status: 500 });
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
-  // Session cookie may still exist; attempt sign-out and then redirect.
+  // Clear session cookies. Do NOT use redirect here — fetch() following redirects after POST can
+  // re-POST to /signup and get 405, so the client treats delete as failed.
   await supabase.auth.signOut();
-  return NextResponse.redirect(new URL("/signup", request.url));
+  return NextResponse.json({ ok: true });
 }
 

@@ -30,7 +30,8 @@ export default function ProfileForm(props: {
   const [avatarUrl, setAvatarUrl] = React.useState<string | null>(props.initial?.avatar_url ?? null);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [deleting, setDeleting] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [deleteInProgress, setDeleteInProgress] = React.useState(false);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -97,12 +98,16 @@ export default function ProfileForm(props: {
 
   async function deleteAccount() {
     setError(null);
-    setDeleting(true);
+    setDeleteInProgress(true);
     try {
-      const res = await fetch("/api/delete-account", { method: "POST" });
+      const res = await fetch("/api/delete-account", { method: "POST", credentials: "same-origin" });
+      const data: unknown = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || "Failed to delete account.");
+        const msg =
+          typeof data === "object" && data !== null && "error" in data && typeof (data as { error: unknown }).error === "string"
+            ? (data as { error: string }).error
+            : "Failed to delete account.";
+        throw new Error(msg);
       }
       toast.push({ type: "success", title: "Account deleted" });
       router.replace("/signup");
@@ -110,7 +115,7 @@ export default function ProfileForm(props: {
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to delete account.");
     } finally {
-      setDeleting(false);
+      setDeleteInProgress(false);
     }
   }
 
@@ -157,10 +162,10 @@ export default function ProfileForm(props: {
                 {error ? <ErrorText>{error}</ErrorText> : null}
 
                 <div className="flex gap-3">
-                  <Button type="submit" disabled={loading || deleting}>
+                  <Button type="submit" disabled={loading || deleteInProgress}>
                     {loading ? "Saving..." : "Save profile"}
                   </Button>
-                  <Button type="button" variant="secondary" disabled={loading || deleting} onClick={() => router.back()}>
+                  <Button type="button" variant="secondary" disabled={loading || deleteInProgress} onClick={() => router.back()}>
                     Cancel
                   </Button>
                 </div>
@@ -181,11 +186,11 @@ export default function ProfileForm(props: {
                 <Button
                   type="button"
                   variant="secondary"
-                  disabled={loading || deleting}
-                  onClick={() => setDeleting(true)}
+                  disabled={loading || deleteInProgress}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="w-full sm:w-auto border-red-500/30 text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
                 >
-                  {deleting ? "Deleting..." : "Delete account"}
+                  {deleteInProgress ? "Deleting..." : "Delete account"}
                 </Button>
               </div>
             </CardBody>
@@ -194,14 +199,15 @@ export default function ProfileForm(props: {
       </Container>
 
       <ConfirmModal
-        open={deleting}
+        open={showDeleteConfirm}
         title="Delete account permanently?"
         description="This will delete your user, profile, and all OJT data. This action cannot be undone."
         confirmLabel="Delete account"
         cancelLabel="Cancel"
         tone="danger"
-        onCancel={() => setDeleting(false)}
+        onCancel={() => setShowDeleteConfirm(false)}
         onConfirm={() => {
+          setShowDeleteConfirm(false);
           void deleteAccount();
         }}
       />
