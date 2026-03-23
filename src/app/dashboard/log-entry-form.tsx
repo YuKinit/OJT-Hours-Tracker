@@ -14,11 +14,19 @@ export default function LogEntryForm() {
   const toast = useToast();
   const dateRef = React.useRef<HTMLInputElement | null>(null);
   const [entryDate, setEntryDate] = React.useState(() => formatISODate(new Date()));
-  const [hoursWorked, setHoursWorked] = React.useState<number>(8);
+  const [hoursWorked, setHoursWorked] = React.useState<string>("8");
   const [note, setNote] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+
+  function sanitizeDecimalInput(value: string) {
+    // Allow digits + at most one dot so users can type freely (no spinner arrows).
+    const sanitized = value.replace(/[^0-9.]/g, "");
+    const parts = sanitized.split(".");
+    if (parts.length <= 1) return sanitized;
+    return `${parts[0]}.${parts.slice(1).join("")}`;
+  }
 
   async function clearRecentDays() {
     setError(null);
@@ -74,7 +82,13 @@ export default function LogEntryForm() {
       setError("Please choose a date.");
       return;
     }
-    if (!Number.isFinite(hoursWorked) || hoursWorked <= 0 || hoursWorked > 24) {
+    const hoursWorkedNum = Number(hoursWorked);
+    if (!hoursWorked.trim()) {
+      setLoading(false);
+      setError("Please enter hours worked.");
+      return;
+    }
+    if (!Number.isFinite(hoursWorkedNum) || hoursWorkedNum < 0.5 || hoursWorkedNum > 24) {
       setLoading(false);
       setError("Hours worked must be between 0.5 and 24.");
       return;
@@ -95,7 +109,7 @@ export default function LogEntryForm() {
         {
           user_id: userId,
           entry_date: entryDate,
-          hours_worked: hoursWorked,
+          hours_worked: hoursWorkedNum,
           note: note.trim() || null,
         },
         { onConflict: "user_id,entry_date" },
@@ -108,7 +122,7 @@ export default function LogEntryForm() {
     }
 
     setNote("");
-    toast.push({ type: "success", title: "Saved", message: `Logged ${hoursWorked}h for ${entryDate}.` });
+    toast.push({ type: "success", title: "Saved", message: `Logged ${hoursWorkedNum}h for ${entryDate}.` });
     router.refresh();
   }
 
@@ -132,12 +146,11 @@ export default function LogEntryForm() {
           <Label htmlFor="hoursWorked">Hours worked</Label>
           <Input
             id="hoursWorked"
-            type="number"
-            min={0.5}
-            max={24}
-            step={0.5}
+            type="text"
+            inputMode="decimal"
+            placeholder="e.g. 8 or 7.5"
             value={hoursWorked}
-            onChange={(e) => setHoursWorked(Number(e.target.value))}
+            onChange={(e) => setHoursWorked(sanitizeDecimalInput(e.target.value))}
           />
         </div>
       </div>
@@ -172,7 +185,7 @@ export default function LogEntryForm() {
           onClick={() => {
             const today = formatISODate(new Date());
             setEntryDate(today);
-            setHoursWorked(8);
+            setHoursWorked("8");
             setNote("");
             setError(null);
             setShowResetConfirm(true);

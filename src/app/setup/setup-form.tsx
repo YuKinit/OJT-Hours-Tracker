@@ -14,8 +14,8 @@ export default function SetupForm(props: { userId: string }) {
   const router = useRouter();
   const toast = useToast();
 
-  const [totalRequiredHours, setTotalRequiredHours] = React.useState<number>(486);
-  const [hoursPerDay, setHoursPerDay] = React.useState<number>(8);
+  const [totalRequiredHours, setTotalRequiredHours] = React.useState<string>("486");
+  const [hoursPerDay, setHoursPerDay] = React.useState<string>("8");
   const [selectedDays, setSelectedDays] = React.useState<Weekday[]>([1, 2, 3, 4, 5]); // Mon-Fri default
   const [startDate, setStartDate] = React.useState<string>(formatISODate(new Date()));
   const [error, setError] = React.useState<string | null>(null);
@@ -25,18 +25,27 @@ export default function SetupForm(props: { userId: string }) {
     setSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
   }
 
+  function sanitizeDecimalInput(value: string) {
+    const sanitized = value.replace(/[^0-9.]/g, "");
+    const parts = sanitized.split(".");
+    if (parts.length <= 1) return sanitized;
+    return `${parts[0]}.${parts.slice(1).join("")}`;
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     const supabase = createSupabaseBrowserClient();
 
-    if (!Number.isFinite(totalRequiredHours) || totalRequiredHours <= 0) {
+    const totalRequiredHoursNum = Number(totalRequiredHours);
+    if (!totalRequiredHours.trim() || !Number.isFinite(totalRequiredHoursNum) || totalRequiredHoursNum <= 0) {
       setLoading(false);
       setError("Total required hours must be greater than 0.");
       return;
     }
-    if (!Number.isFinite(hoursPerDay) || hoursPerDay <= 0 || hoursPerDay > 24) {
+    const hoursPerDayNum = Number(hoursPerDay);
+    if (!hoursPerDay.trim() || !Number.isFinite(hoursPerDayNum) || hoursPerDayNum <= 0 || hoursPerDayNum > 24) {
       setLoading(false);
       setError("Hours per day must be between 1 and 24.");
       return;
@@ -54,8 +63,8 @@ export default function SetupForm(props: { userId: string }) {
 
     const payload = {
       user_id: props.userId,
-      total_required_hours: Math.round(totalRequiredHours),
-      hours_per_day: hoursPerDay,
+      total_required_hours: Math.round(totalRequiredHoursNum),
+      hours_per_day: hoursPerDayNum,
       selected_weekdays: Array.from(new Set(selectedDays)).sort(),
       start_date: startDate,
     };
@@ -86,11 +95,11 @@ export default function SetupForm(props: { userId: string }) {
                     <Label htmlFor="totalHours">Total required hours</Label>
                     <Input
                       id="totalHours"
-                      type="number"
-                      min={1}
-                      step={1}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 486"
                       value={totalRequiredHours}
-                      onChange={(e) => setTotalRequiredHours(Number(e.target.value))}
+                      onChange={(e) => setTotalRequiredHours(sanitizeDecimalInput(e.target.value))}
                     />
                   </div>
 
@@ -98,12 +107,11 @@ export default function SetupForm(props: { userId: string }) {
                     <Label htmlFor="hoursPerDay">Hours per day</Label>
                     <Input
                       id="hoursPerDay"
-                      type="number"
-                      min={1}
-                      max={24}
-                      step={0.5}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 8 or 7.5"
                       value={hoursPerDay}
-                      onChange={(e) => setHoursPerDay(Number(e.target.value))}
+                      onChange={(e) => setHoursPerDay(sanitizeDecimalInput(e.target.value))}
                     />
                   </div>
                 </div>
