@@ -20,6 +20,7 @@ import {
 
 import LogEntryForm from "./log-entry-form";
 import DashboardToasts from "./dashboard-toasts";
+import RecentEntriesList from "./recent-entries-list";
 
 function formatHuman(d: Date) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "2-digit" });
@@ -146,23 +147,7 @@ export default async function DashboardPage() {
 
                 <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">Recent days</div>
-                  <div className="mt-3 space-y-2">
-                    {recentEntries.length === 0 ? (
-                      <div className="text-sm text-zinc-600 dark:text-zinc-400">No logs yet. Add your first day above.</div>
-                    ) : (
-                      recentEntries.map((e) => (
-                        <div key={e.id} className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm font-medium">{e.entry_date}</div>
-                            {e.note ? (
-                              <div className="text-xs text-zinc-600 dark:text-zinc-400 truncate">{e.note}</div>
-                            ) : null}
-                          </div>
-                          <div className="text-sm font-semibold tabular-nums">{Number(e.hours_worked).toFixed(1)}h</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                  <RecentEntriesList entries={recentEntries} />
                 </div>
 
                 {/* Desktop: keep stats compact in the side column */}
