@@ -3,7 +3,6 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui";
 import { ConfirmModal } from "@/components/confirm-modal";
 import { EditHoursModal } from "@/components/edit-hours-modal";
 import { useToast } from "@/components/toast";
@@ -11,7 +10,7 @@ import type { OjtEntryRow } from "@/lib/db/ojt-entries";
 
 function EditIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M12 20h9"
         stroke="currentColor"
@@ -32,7 +31,7 @@ function EditIcon() {
 
 function TrashIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M3 6h18"
         stroke="currentColor"
@@ -164,24 +163,22 @@ export default function RecentEntriesList(props: { entries: OjtEntryRow[] }) {
                 <div className="text-sm font-semibold tabular-nums">{Number(e.hours_worked).toFixed(1)}h</div>
 
                 <div className="flex items-center gap-1">
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    className="h-9 w-9 px-0"
                     aria-label={`Edit ${e.entry_date}`}
                     onClick={() => setEditing(e)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-zinc-700 hover:bg-black/5 dark:text-zinc-200 dark:hover:bg-white/10 transition"
                   >
                     <EditIcon />
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    variant="ghost"
-                    className="h-9 w-9 px-0"
                     aria-label={`Delete ${e.entry_date}`}
                     onClick={() => setDeleting(e)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40 transition"
                   >
                     <TrashIcon />
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
