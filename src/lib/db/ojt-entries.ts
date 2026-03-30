@@ -23,6 +23,29 @@ export async function listRecentOjtEntries(userId: string, limit = 14) {
   return (data ?? []) as OjtEntryRow[];
 }
 
+/** All day logs for the user, newest first. Paginated to bypass PostgREST default row caps. */
+export async function listAllOjtEntries(userId: string) {
+  const supabase = await createSupabaseServerClient();
+  const pageSize = 1000;
+  const all: OjtEntryRow[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("ojt_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .order("entry_date", { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+    const rows = (data ?? []) as OjtEntryRow[];
+    all.push(...rows);
+    if (rows.length < pageSize) break;
+  }
+
+  return all;
+}
+
 export async function getTotalLoggedHours(userId: string) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.from("ojt_entries").select("hours_worked").eq("user_id", userId);

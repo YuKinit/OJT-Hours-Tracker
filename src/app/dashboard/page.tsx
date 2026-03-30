@@ -5,7 +5,7 @@ import { Avatar, Button, Card, CardBody, CardHeader, Container, Page, TopBar } f
 import LogoutButton from "@/components/logout-button";
 import MobileNav from "@/components/mobile-nav";
 import { requireUser } from "@/lib/auth/require-user";
-import { listRecentOjtEntries, getTotalLoggedHours } from "@/lib/db/ojt-entries";
+import { listAllOjtEntries, getTotalLoggedHours } from "@/lib/db/ojt-entries";
 import { getOjtProfileForUser } from "@/lib/db/ojt-profiles";
 import { getUserProfileForUser } from "@/lib/db/user-profiles";
 import {
@@ -33,10 +33,7 @@ export default async function DashboardPage() {
   const userProfile = await getUserProfileForUser(user.id);
   const displayName = userProfile?.full_name?.trim() || null;
 
-  const [recentEntries, totalLogged] = await Promise.all([
-    listRecentOjtEntries(user.id, 14),
-    getTotalLoggedHours(user.id),
-  ]);
+  const [logEntries, totalLogged] = await Promise.all([listAllOjtEntries(user.id), getTotalLoggedHours(user.id)]);
 
   const remainingHours = Math.max(0, profile.total_required_hours - totalLogged);
 
@@ -147,7 +144,7 @@ export default async function DashboardPage() {
 
                 <div className="rounded-xl border border-black/10 dark:border-white/10 p-4">
                   <div className="text-sm text-zinc-600 dark:text-zinc-400">Recent days</div>
-                  <RecentEntriesList entries={recentEntries} />
+                  <RecentEntriesList entries={logEntries} />
                 </div>
 
                 {/* Desktop: keep stats compact in the side column */}
